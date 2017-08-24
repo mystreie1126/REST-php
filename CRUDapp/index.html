@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<!-- JQuery and Bootstrap -->
+<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+
+<style>
+    .btn:hover {
+        cursor: pointer;
+        color: blue;
+    }
+    #update_btn {
+        display: none;
+    }
+    .modalDialog {
+        position: fixed;
+        font-family: Arial, Helvetica, sans-serif;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background: rgba(0,0,0,0.8);
+        z-index: 99999;
+        opacity:0;
+        -webkit-transition: opacity 400ms ease-in;
+        -moz-transition: opacity 400ms ease-in;
+        transition: opacity 400ms ease-in;
+        pointer-events: none;
+    }
+    .modalDialog:target {
+        opacity:1;
+        pointer-events: auto;
+    }
+
+    .modalDialog > div {
+        width: 400px;
+        position: relative;
+        margin: 10% auto;
+        padding: 5px 20px 13px 20px;
+        border-radius: 10px;
+        background: #fff;
+        background: -moz-linear-gradient(#fff, #999);
+        background: -webkit-linear-gradient(#fff, #999);
+        background: -o-linear-gradient(#fff, #999);
+    }
+
+    .close {
+        background: #606061;
+        color: #FFFFFF;
+        line-height: 25px;
+        position: absolute;
+        right: -12px;
+        text-align: center;
+        top: -10px;
+        width: 24px;
+        text-decoration: none;
+        font-weight: bold;
+        -webkit-border-radius: 12px;
+        -moz-border-radius: 12px;
+        border-radius: 12px;
+        -moz-box-shadow: 1px 1px 3px #000;
+        -webkit-box-shadow: 1px 1px 3px #000;
+        box-shadow: 1px 1px 3px #000;
+    }
+
+    .close:hover { background: #00d9ff; }
+
+    #modal_btn {
+        margin-left:auto;
+        margin-right:auto;
+    }
+</style>
+
+<a class="btn btn-primary" id="modal_btn" href="#openModal">New Contact</a>
+
+<div id="openModal" class="modalDialog">
+    <div>
+        <a href="#close" id="close" title="Close" class="close">X</a>
+        <form>
+            <input type="hidden" id="id">
+            <div class="form-group">
+                <label for="fullname">Contact name</label>
+                <input type="text" class="form-control" id="fullname" aria-describedby="nameHelp" placeholder="Enter contact name">
+                <small id="nameHelp" class="form-text text-muted">Enter your contact name here</small>
+            </div>
+            <div class="form-group">
+                <label for="email">Email address</label>
+                <input type="email" class="form-control" id="email" aria-describedby="emailHelp" placeholder="Enter email">
+                <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>
+            </div>
+            <div class="form-group">
+                <label for="phone">Email address</label>
+                <input type="phone" class="form-control" id="phone" aria-describedby="phoneHelp" placeholder="Enter phone">
+                <small id="phoneHelp" class="form-text text-muted">Do not forget to enter contact's phone number</small>
+            </div>
+            <button type="button" id="add_btn" class="btn btn-primary" onclick="create();">Create new contact</button>
+            <button type="button" id="update_btn" class="btn btn-primary" onclick="update();">Update this contact</button>
+        </form>
+    </div>
+</div>
+
+
+<table class="table table-inverse">
+    <thead>
+    <tr>
+        <th>#</th>
+        <th>Contact name</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+</table>
+
+<script type="text/javascript">
+        $(function(){
+            load();
+        });
+        function create()
+        {
+            var data = {fullname: $('#fullname').val(), email: $('#email').val(), phone: $('#phone').val()};
+            $.ajax({
+                type: "POST",
+                url: "api.php",
+                data: JSON.stringify({action: 'create', data: data}),
+                success: function (resp) {
+                    if (resp.success && resp.action == 'Create') {
+                        load();
+                        document.getElementById("close").click();
+                    }
+                },
+                error: function (resp, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown, resp);
+                },
+                dataType: 'json'
+            });
+        };
+        function read(id)
+        {
+            var data = {id: id};
+            $.ajax({
+                type: "POST",
+                url: "api.php",
+                data: JSON.stringify({action: 'read', data: data}),
+                success: function (resp) {
+                    if (resp.success && resp.action == 'Read') {
+                        $('#update_btn').css('display', 'block');
+                        $('#add_btn').css('display', 'none');
+                        $('#id').val(resp.data.id);
+                        $('#fullname').val(resp.data.name);
+                        $('#email').val(resp.data.email);
+                        $('#phone').val(resp.data.phone);
+                        document.getElementById("modal_btn").click();
+                    }
+                },
+                error: function (resp, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown, resp);
+                },
+                dataType: 'json'
+            });
+        };
+        function load()
+        {
+            $('#tbody').empty();
+            $.ajax({
+                type: "POST",
+                url: "api.php",
+                data: JSON.stringify({action: 'load', data: ''}),
+                success: function (resp) {
+                    if (resp.success && resp.action == 'Load') {
+                        resp.data.forEach(function(element, index, array) {
+                            $('#tbody').append('<tr data-id="' + element.id + '">' +
+                                    '<td>'  + element.id + '</td>' +
+                                    '<td>'  + element.name + '</td>' +
+                                    '<td><span class="btn" onclick="read(' + element.id + ');">READ</span> ' +
+                                    '<span class="btn" onclick="del(' + element.id + ');">DELETE</span></td>' +
+                                    '</tr>');
+                        })
+                    }
+                },
+                error: function (resp, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown, resp);
+                },
+                dataType: 'json'
+            });
+        };
+        function update()
+        {
+            var data = {id: $('#id').val(), fullname: $('#fullname').val(), email: $('#email').val(), phone: $('#phone').val()};
+            $.ajax({
+                type: "POST",
+                url: "api.php",
+                data: JSON.stringify({action: 'update', data: data}),
+                success: function (resp) {
+                    if (resp.success && resp.action == 'Update') {
+                        load();
+                        document.getElementById("close").click();
+                    }
+                },
+                error: function (resp, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown, resp);
+                },
+                dataType: 'json'
+            });
+        };
+
+        function del(id)
+        {
+            var data = {id: id};
+            $.ajax({
+                type: "POST",
+                url: "api.php",
+                data: JSON.stringify({action: 'delete', data: data}),
+                success: function (resp) {
+                    if (resp.success && resp.action == 'Delete') {
+                        load();
+                    }
+                },
+                error: function (resp, textStatus, errorThrown) {
+                    console.log(textStatus, errorThrown, resp);
+                },
+                dataType: 'json'
+            });
+        };
+
+        $('#close').click(function() {
+            $('#update_btn').css('display', 'none');
+            $('#add_btn').css('display', 'block');
+            $('#id').val('');
+            $('#fullname').val('');
+            $('#email').val('');
+            $('#phone').val('');
+        })
+</script>
+</body>
+</html>
